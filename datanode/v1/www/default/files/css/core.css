@@ -1,0 +1,48 @@
+/*******************************************************
+*
+*	Core styles
+*	Description:	Reset elements
+*
+*******************************************************/
+
+/*** Reset ***/
+html,body, section, header, footer, article, div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,legend,input,textarea,p,blockquote,table,th,td,small,big,menu,img {
+margin: 0;
+padding: 0;
+border: 0;
+font-family: inherit;
+}
+
+html,body { width:100%; height:100%; font-size: 100%; }
+
+h1,h2,h3,h4,h5,h6 { font-size: 100%; }
+
+section, header, hgroup, nav, article, footer, aside { display:block; }
+
+a { text-decoration: none; outline: none; font-size: inherit; color: inherit; }
+
+table { border-collapse: collapse; border-spacing: 0; }
+
+fieldset, img { border: 0; }
+
+li { list-style: none; }
+
+blockquote,q { font-size:inherit; }
+
+input, button, select, option { outline: none; }
+
+input,textarea, select { font-size: inherit; font-weight: inherit; }
+
+span { display: inline-block; }
+
+abbr,acronym { cursor: help; }
+
+del,ins { color: inherit; }
+
+.clear:after { content: "."; display:block; clear:both; height:0; visibility:hidden; }
+
+textarea, input { outline: none; }
+
+div.break { height: 1px; background-color: #f2f2f2; margin: 20px; width: auto; }
+
+ul { display: block; list-style-type: disc; -webkit-margin-before: 0em; -webkit-margin-after: 0em; -webkit-margin-start: 0px; -webkit-margin-end: 0px; -webkit-padding-start: 0px; }

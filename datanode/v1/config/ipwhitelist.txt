@@ -1,0 +1,12 @@
+# Simple IP Block table
+# Format <ipaddress (127.0.0.1)>,<description>,<countrycode>
+
+[all]
+# This is for all realms (socket and web access)
+*,All Access,XX
+
+[socket]
+# Socket specific access from ipaddresses
+
+[web]
+# Web specific access from ipaddresses
