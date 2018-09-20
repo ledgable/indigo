@@ -1,6 +1,4 @@
 
-# Copyright (C)2017 Ledgable BV
-
 from modules.http.controllers.DefaultController import *
 
 class CoreController(DefaultController):

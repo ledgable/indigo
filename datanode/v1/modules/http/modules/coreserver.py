@@ -1,7 +1,4 @@
 
-
-# Copyright (C)2017 Im-At-Home BV
-
 import re
 import os
 import glob

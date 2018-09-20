@@ -1,6 +1,4 @@
 
-# Copyright (C)2017 Im-At-Home BV
-
 import sys, getopt, imp, traceback
 import calendar, datetime
 
