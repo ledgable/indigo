@@ -8,7 +8,7 @@ This infrastructure comprises of indexers, a configuration cluster and a smart w
 What is DLT?
 
 Distributed Ledger Technology could be viewed as the foundation service platform of Blockchain. 
-The P2P (peer to peer) protocol is not REALLY decentralised - It appears that way. Effectively you need a "tracker" (which we call and indexer), that assists you in finding content.
+The P2P (peer to peer) protocol is not REALLY decentralised - It appears that way. Effectively you need a "tracker" (which we call an indexer), that assists you in finding content.
 Datanodes contact the indexer to receive information updates and configuration changes. 
 
 Datanodes?
@@ -19,7 +19,7 @@ Additionally, ontop of this engine sits an API webserver that enables custom app
 Whats released?
 
 The datanode software is released today as OpenSource under the GPLv3 license. This is done to present transparency and integrity to the marketplace. What you choose to build ontop of this is upto you.
-Ledgable's web-application does not store any other data that configuration information. As a result, all the data and communication channels are outside of Ledgable's perview.
+Ledgable's web-application does not store any other data than configuration (and account) information. As a result, all the data and communication channels are outside of Ledgable's perview.
 For security reasons, we are not releasing the web-application platform. It is my intention that over time, this service will move to a foundation model.
 
 Bugs, bugs, bunny & more
