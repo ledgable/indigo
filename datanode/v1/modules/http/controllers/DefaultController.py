@@ -7,6 +7,15 @@ class DefaultController(NodeController):
 		NodeController.__init__(self, handler, session, query, isajax)
 	
 	
+	@endpoint(97, True, False, None, "get", "^/.serviceid", "Get service identifier")
+	def getServiceId(self, postData=None, appVars=None):
+		
+		out_ = self.handler.server.manager.deviceid_
+		bytes_ = out_.encode(UTF8)
+		
+		return FunctionResponse(HTTP_OK, "application/txt",  bytes_)
+	
+	
 	@endpoint(97, True, False, None, "get", "^/.htaccess", "Get htaccess")
 	def getHtAccess(self, postData=None, appVars=None):
 

@@ -2,6 +2,7 @@
 from modules.repeater import *
 from modules.daoobject import *
 from modules.baseclass import *
+from modules.singleton import *
 
 class AppHandler(BaseClass, metaclass=Singleton):
 	

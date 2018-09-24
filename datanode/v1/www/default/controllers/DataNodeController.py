@@ -55,7 +55,7 @@ class DataNodeController(NodeController):
 	@endpoint(1, False, True, None, "get", "^/api/datanode/(?P<chainid>[0-9a-f][^-&*/\%]*)/transactions/key/(?P<key>[0-9a-z][^-&*/\%]*)/(?P<value>[0-9a-z][^-&*/\%]*)", "Get transactions for block for key with value")
 	def getTransactionsForKeyAndValue(self, postData=None, appVars=None, chainid=None, key=None, value=None):
 			
-		transactions_ = self.transactionsWithKeyValue(chainid, key, value)
+		transactions_ = self.transactionsWithKeyValue(chainid, key, value, "==")
 						
 		return FunctionResponse(HTTP_OK, TYPE_JSON, {"chainid":chainid, "transactions":transactions_})
 

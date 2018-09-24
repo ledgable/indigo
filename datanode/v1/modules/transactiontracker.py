@@ -2,6 +2,7 @@
 from .baseclass import *
 from .singleton import *
 from .daoobject import *
+from .repeater import *
 
 class TransactionTracker(BaseClass, metaclass=Singleton):
 	

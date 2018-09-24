@@ -1,4 +1,6 @@
 
+import hashlib
+
 from config import *
 
 from modules.daoobject import *

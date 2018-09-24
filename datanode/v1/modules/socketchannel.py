@@ -53,6 +53,7 @@ def myConnectProtocol(endpoint, protocol, onConnect, onFail):
 
 	return d
 
+
 class SocketProtocol(Protocol, BaseClass):
 	
 	socketmgr_ = None

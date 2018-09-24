@@ -10,40 +10,47 @@ class Repeater(Thread):
 	
 	running_ = False
 	lastpoll_ = None
+	interval_ = 0
+	action_ = None
+	args_ = None
 	
 	@property
 	def running(self):
 		
 		return self.running_
+
 	
 	@property
 	def lastpoll(self):
 		
 		return self.lastpoll_
+
 	
 	def __init__(self, interval, action, args):
 		
 		Thread.__init__(self)
 		self.running_ = False
 		self.lastpoll_ = 0
-		self.interval=interval
-		self.action=action
-		self.args=args
-		self.running_=True
+		self.interval_ = interval
+		self.action_ = action
+		self.args_ = args
+		self.running_ = True
+
 	
 	def run(self):
 		
-		if (self.action == None):
+		if (self.action_ == None):
 			return
 				
 		while (self.running_):
-			sleep(self.interval)
+			sleep(self.interval_)
 			
 			if (self.running_):
-				t = threading.Thread(target=self.action, args=[self.args])
+				t = threading.Thread(target=self.action_, args=[self.args_])
 				t.daemon = True
 				t.start()
 
+
 	def stop(self):
 		
-		self.running_=False
+		self.running_ = False

@@ -3,12 +3,15 @@ from config import *
 from dataobjects import *
 
 from .baseclass import *
+from .switch import *
 
+DEFAULT_KEYS = ["timestamp", "transid"]
 MAX_TRANSACTIONS_BEFORE_FLUSH = 1024
 BASE_HASH = "00000000000"
 
 CHAIN_INITIALIZING = 0
 CHAIN_READY = 1
+
 
 	# Terminology
 
@@ -503,16 +506,21 @@ class Chain(ChainReader):
 		key_ = None
 		value_ = None
 		equality_ = None
+		comparisonfn_ = None
 		
 		if (filter != None):
 			key_ = filter["key"]
 			value_ = filter["value"]
-			equality_ = "="
-		
-		if (transactionsIn != None) and (len(transactionsIn) > 0):
+			equality_ = filter["equality"]
+			comparisonfn_ = filter["comparisonfn"]
+
+		if (comparisonfn_) and (transactionsIn != None) and (len(transactionsIn) > 0):
 			
+			# if we have a comparison function, execute it over the set
+
 			for transaction_ in transactionsIn:
-				if (transaction_[key_] == value_):
+				self.log("using fn %s" % comparisonfn_)
+				if comparisonfn_(key_, value_, transaction_):
 					out_.append(transaction_)
 
 		return out_, False
@@ -523,9 +531,94 @@ class Chain(ChainReader):
 		return self.readChain(base, self.filterTransactionsForIds, {"ids":transids}, since)
 
 	
-	def getTransactionsWithKeyValue(self, key=None, value=None, equality="=", base=BASE_HASH):
+	def getTransactionsWithKeyValue(self, key=None, value=None, equality="==", base=BASE_HASH):
 		
-		return self.readChain(base, self.filterTransactionsForKeyValue, {"key":key, "value":value, "equality":equality}, 0)
+		# we need to clean up the value...
+		
+		structure_ = self.controller_.config.structure.toDict("field_name")
+		keys_ = list(structure_.keys())
+		keys_.extend(DEFAULT_KEYS)
+		
+		if (key in keys_):
+			
+			fieldinfo_ = structure_[key]
+			datatype_ = fieldinfo_["datatype"]
+			issearchable_ = (fieldinfo_["is_key"] == 1)
+			
+			if (issearchable_):
+			
+				normalizedvalue_ = value
+				
+				for case in switch(datatype_):
+					
+					if case("string"):
+						normalizedvalue_ = str(value)
+						break
+				
+					if case("integer") or case("long"):
+						normalizedvalue_ = int(value)
+						break
+				
+					if case("double") or case("float"):
+						normalizedvalue_ = float(value)
+						break
+			
+					if case("bit"):
+						normalizedvalue_ = int(value)
+						break
+
+				self.log(normalizedvalue_.__class__)
+			
+				if (normalizedvalue_ != None):
+
+					fnToExecute_ = None
+					
+					# create a function to perform comparison over a transaction
+				
+					for case in switch(equality):
+					
+						if case("=="):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] == value_)
+							fnToExecute_ = fnComparison
+							break
+
+						if case("!="):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] != value_)
+							fnToExecute_ = fnComparison
+							break
+
+						if case(">"):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] > value_)
+							fnToExecute_ = fnComparison
+							break
+
+						if case(">="):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] >= value_)
+							fnToExecute_ = fnComparison
+							break
+
+						if case("<"):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] < value_)
+							fnToExecute_ = fnComparison
+							break
+
+						if case("<="):
+							def fnComparison(key_, value_, transaction_):
+								return (transaction_[key_] <= value_)
+							fnToExecute_ = fnComparison
+							break
+
+					return self.readChain(base, self.filterTransactionsForKeyValue, {"key":key, "value":normalizedvalue_, "equality":equality, "comparisonfn":fnToExecute_}, 0)
+						
+			else:
+				self.log("Field %s is not searchable" % (key))
+					
+		return []
 
 
 	def getTransactionsFrom(self, transid=0, base=BASE_HASH):

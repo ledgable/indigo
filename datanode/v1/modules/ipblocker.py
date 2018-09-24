@@ -18,10 +18,10 @@ import base64
 from threading import Thread
 from operator import itemgetter
 
-from modules.baseclass import *
-from modules.singleton import *
-from modules.repeater import *
-from modules.daoobject import *
+from .baseclass import *
+from .singleton import *
+from .repeater import *
+from .daoobject import *
 
 class IPBlocker(BaseClass, metaclass=Singleton):
 

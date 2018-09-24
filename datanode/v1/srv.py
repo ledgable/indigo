@@ -16,7 +16,7 @@ class MainApp(BaseClass):
 	listening_ = False
 	
 	listenon_ = "0.0.0.0:9996"
-	server_ = "www.ledgable.com:9908"
+	server_ = "indexer.ledgable.com:9908"
 	
 	application_ = None
 	mode_ = "console"
