@@ -17,7 +17,7 @@ App.Example.Extended = {
 		var oData = $('*').triggerHandler('do-formdata', {'target':'deploy__info'});
 		oData.uid = oArgs.uid;
 		
-		var oRequest= {actions:[{action:'testjscallserverside', data:oData}], jw:App.Core.Security.code};
+		var oRequest= {actions:[{action:'testjscallserverside', data:oData}]};
 		$('*').triggerHandler('handle-app', oRequest);
 		
 	}
