@@ -117,6 +117,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 	allow_reuse_address = True
 	daemon_threads = True
 	config_ = None
+	defaultcontext_ = None
 	
 	instanceid = 0
 	
@@ -269,9 +270,12 @@ class CoreServer(BaseClass, ThreadingMixIn):
 
 	def verify_request(self, request, client_address):
 		
-		success_, countrycode_ = IPBlocker().check(client_address[0], "web")
-	
-		return success_, countrycode_
+		if (client_address != None) and (len(client_address) > 0):
+			success_, countrycode_ = IPBlocker().check(client_address[0], "web")
+			
+			return success_, countrycode_
+				
+		return False, None
 	
 	def _verify_callback(cnx, x509, err_no, err_depth, return_code):
 		
@@ -311,7 +315,6 @@ class CoreServer(BaseClass, ThreadingMixIn):
 				# this is where we map the certificate based upon the incoming host identifier
 				
 				def servercallback(sock, req_hostname, cb_context, as_callback=True, base=self):
-					
 					context = base.ssl_contextForHostname(req_hostname)
 					
 					if (context is not None):
@@ -320,24 +323,46 @@ class CoreServer(BaseClass, ThreadingMixIn):
 						pass
 				
 				try:
-					sslcontext_ = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
-					sslcontext_.set_servername_callback(servercallback)
+					if (self.defaultcontext_ == None):
+						
+						context_ = ssl.create_default_context(purpose=ssl.Purpose.CLIENT_AUTH)
+						context_.set_ciphers(SSL_CIPHERS)
+						context_.options |= ssl.OP_NO_COMPRESSION
+						context_.options |= ssl.OP_SINGLE_ECDH_USE
+						context_.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
+						context_.load_cert_chain(certfile=DEFAULT_CERT)
+						
+						self.defaultcontext_ = context_
 					
-					sslcontext_.load_cert_chain(certfile=DEFAULT_CERT)
-					sslsock = sslcontext_.wrap_socket(dup, server_side=True)
-					
-					if (sslsock != None):
-						# switch over to using the new socket...
-						sock = sslsock
-						isssl = True
+					sslsock = self.defaultcontext_.wrap_socket(dup, server_side=True)
+					sock = sslsock
+					isssl = True
 				
-				except ssl.SSLEOFError as e:
-					pass
-
 				except ssl.SSLError as e:
-					if (e.reason == "CERTIFICATE_VERIFY_FAILED"):
-						self.log(("No peer certificate... - %s" % e), "info")
+					
+					if e.errno == ssl.SSL_ERROR_EOF:
+						# This is almost certainly due to the cherrypy engine
+						# 'pinging' the socket to assert it's connectable;
+						# the 'ping' isn't SSL.						
+						return None, {}, False
+					
+					elif e.errno == ssl.SSL_ERROR_SSL:
+						
+						if e.args[1].endswith('http request'):
+							self.log("HTTP Request over SSL")
+							dup.close()
+							# The client is speaking HTTP to an HTTPS server.
+							return sock, addr, False
+						
+						elif e.args[1].endswith('unknown protocol'):
+							# The client is speaking some non-HTTP protocol.
+							# Drop the conn.
+							self.log("Unknown Protocol")
+							return None, {}, False
 				
+					else:
+						return None, {}, False
+
 				except Exception as inst:
 					pass
 
