@@ -330,6 +330,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 						context_.options |= ssl.OP_NO_COMPRESSION
 						context_.options |= ssl.OP_SINGLE_ECDH_USE
 						context_.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
+						context_.set_servername_callback(servercallback)
 						context_.load_cert_chain(certfile=DEFAULT_CERT)
 						
 						self.defaultcontext_ = context_
