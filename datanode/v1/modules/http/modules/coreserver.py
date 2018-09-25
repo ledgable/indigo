@@ -63,8 +63,6 @@ from .applicationhandler import *
 from .functionresponse import *
 
 ROOT = os.path.dirname(os.path.abspath(__file__)) + "/../../../"
-DEFAULT_CERT = ("%s/certs/%s" % (ROOT, "cert.pem"))
-
 
 class CoreHandler(BaseClass, BaseHTTPRequestHandler):
 	
@@ -331,7 +329,6 @@ class CoreServer(BaseClass, ThreadingMixIn):
 						context_.options |= ssl.OP_SINGLE_ECDH_USE
 						context_.options |= ssl.OP_CIPHER_SERVER_PREFERENCE
 						context_.set_servername_callback(servercallback)
-						context_.load_cert_chain(certfile=DEFAULT_CERT)
 						
 						self.defaultcontext_ = context_
 					
