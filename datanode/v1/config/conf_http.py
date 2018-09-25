@@ -34,7 +34,7 @@ TEXT_TYPES = [TYPE_HTML, TYPE_RAW, TYPE_JSON, TYPE_XML, TYPE_XMLS]
 
 AJAX_TOKEN = "XMLHttpRequest"
 
-HTTP_ACTIONS = {"get":"get", "head":"get", "put":"put", "post":"post", "delete":"delete"}
+HTTP_ACTIONS = {"get":"get", "head":"get", "put":"put", "post":"post", "delete":"delete", "gateway":"gateway"}
 
 AUTOBLOCK_USERAGENTS = ["masscan"]
 ALLOWED_USERAGENTS = ["chrome", "safari", "firefox", "microsoft", "msie", "opera", "gecko", "bot", "mozilla"]
@@ -63,5 +63,6 @@ HTTP_ACTION_PUT = "put"
 HTTP_ACTION_GET = "get"
 HTTP_ACTION_POST = "post"
 HTTP_ACTION_DELETE = "delete"
+HTTP_ACTION_GATEWAY = "gateway"
 
 HTML_NBSP = "&nbsp;"

@@ -31,9 +31,19 @@ if (chains_ != None):
 </py>
 	
 		</ul>
-	
+			
 	</section>
+	
+	<h3 data-event="{'action':'Example.Extended','event':'testjscall','args':{'uid':'12345'}}">Click here to test AJAX Post</h3>
 
+	<p>AJAX (or Asynchronous Javascript Execution) is a method to push data to the server without causing a page refresh</p>
+	
+	<p>This allows for customized content to be rendered as required or form data to be passed resulting in UI or interaction changes</p>
+	
+	<p>The datanode comes with a basic model to enable you to push data to a datanode endpoint (see the file 'TestController.py') and the Javascript code 'app.example.js'</p>
+	
+	<h3>Further Info</h3>
+	
 	<p>To customize this page, css and so forth, see the <strong>www/default</strong> folder in the root of the service installation</p>
 
 	<pyinclude>views/__bits/appvars.html.py</pyinclude>

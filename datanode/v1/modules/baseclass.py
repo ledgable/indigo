@@ -68,9 +68,9 @@ class RawVars(object, metaclass=Singleton):
 
 	stdout_ = sys.stdout
 	stdin_ = sys.stdin
+	serviceid_ = None
 	lasttext_ = ""
 	debug_ = False
-	
 
 	def writeOut(self, str):
 		
@@ -86,7 +86,12 @@ class RawVars(object, metaclass=Singleton):
 		
 		return self.debug_
 	
-
+	
+	@property
+	def serviceid(self):
+		return self.serviceid_
+	
+	
 	@property
 	def stdout(self):
 		
@@ -99,16 +104,36 @@ class RawVars(object, metaclass=Singleton):
 		return self.stdin_
 
 
+	def getHwAddr(self, interested=["en0", "eth0", "en1"]):
+		
+		import netifaces
+		
+		mac_ = None
+		interfaces_ = netifaces.interfaces()
+		
+		for interface_ in interfaces_:
+			if (interface_ in interested):
+				info_ = netifaces.ifaddresses(interface_)
+				if (netifaces.AF_LINK in info_.keys()):
+					addressinfo_ = info_[netifaces.AF_LINK]
+					if (len(addressinfo_) > 0):
+						mac_ = (addressinfo_[0])["addr"]
+	
+		if (mac_ != None):
+			mac_ = mac_.replace(":", "")
+
+		return mac_
+	
+	
 	def __init__(self):
 		
 		self.stdout_ = sys.stdout
 		self.stdin_ = sys.stdin
+		self.serviceid_ = self.getHwAddr()
 
+# some common functionality used by alot of code - we place it here to ensure we dont replicate code etc
 
 rawVars_ = RawVars()
-
-	# some common functionality used by alot of code - we place it here to ensure we dont replicate code etc
-
 
 class BaseClass(object):
 	

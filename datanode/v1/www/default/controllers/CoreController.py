@@ -7,6 +7,18 @@ class CoreController(DefaultController):
 	def __init__(self, handler, session, query=None, isajax=False):
 		DefaultController.__init__(self, handler, session, query, isajax)
 
+	
+	@endpoint(1, True, True, None, "get", "^/__ping", "Get session info")
+	def ping(self, postData=None, appVars=None, messageTop=-1):
+		
+		username_ = self.session.username
+		result_ = 0
+
+		if (username_ != None):
+			result_ = 1
+
+		return FunctionResponse(HTTP_OK, TYPE_JSON, {"loggedin":result_})
+
 
 	@endpoint(99, True, True, None, "get", "(?P<pagename>/[^ ]*)", "Fetch page by name")
 	def page(self, postData=None, appVars=None, pagename=None):

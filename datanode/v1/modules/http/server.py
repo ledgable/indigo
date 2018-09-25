@@ -614,9 +614,47 @@ class MyHandler(CoreHandler):
 			self.send_error(HTTP_FORBIDDEN, RESPONSE_ACCESS_DENIED)
 			self.close_connection = 1
 			return
-		
-		routefound_ = self.CONTROLLERS.routes.match(vars_.path.path, action)
 				
+		routefound_ = None
+		
+		if (action in [HTTP_ACTION_GATEWAY]):
+			
+			if (vars_.contentlength != None):
+				
+				length_ = int(vars_.contentlength)
+				
+				if (length_ > 0):
+					
+					postData_ = self.rfile.read(length_)
+					encoded_ = postData_.decode(UTF8)
+					dict_ = json.loads(encoded_)
+					
+					if (dict_ != None) and ("actions" in dict_.keys()):
+						
+						actionsFound_ = dict_["actions"]
+						
+						if (len(actionsFound_) == 1):
+							
+							gatewayAction_ = actionsFound_[0]
+							
+							action_ = gatewayAction_["action"]
+							content_ = None
+							params_ = DAOObject(gatewayAction_["data"])
+							
+							if ("content" in gatewayAction_.keys()):
+								content_ = gatewayAction_["content"]
+						
+							routefound_ = self.CONTROLLERS.routes.match(action_, HTTP_ACTION_GATEWAY)
+							
+							if (routefound_ != None):
+								if (routefound_.vars_ == None):
+									routefound_.vars_ = {}
+								
+								routefound_.vars_.update({"params":params_, "content":content_})
+
+		else:
+			routefound_ = self.CONTROLLERS.routes.match(vars_.path.path, action)
+		
 		if (routefound_ == None):
 			self.log(("Route invalid - %s:%s" % (action, vars_.path.path)))
 
@@ -730,7 +768,7 @@ class MyHandler(CoreHandler):
 					
 					if ((routefound_ != None) and (routefound_.controller != None)):
 
-						if (action not in [HTTP_ACTION_GET, HTTP_ACTION_DELETE]):
+						if (action not in [HTTP_ACTION_GET, HTTP_ACTION_DELETE, HTTP_ACTION_GATEWAY]):
 							
 							if (vars_.contentlength != None):
 								length_ = int(vars_.contentlength)
