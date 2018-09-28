@@ -82,22 +82,27 @@ class CoreHandler(BaseClass, BaseHTTPRequestHandler):
 
 
 	def __init__(self, request, client_address, server, country_code, isssl=False):
+		
 		self.country_code = country_code
 		self.socket_ = request
 		self.timestart_ = self.epoch
 		self.useSSL = isssl
+		
 		BaseHTTPRequestHandler.__init__(self, request, client_address, server)
 
 
 	@property
 	def protocol_version(self):
+		
 		return "HTTP/1.0"
 
 
 	@property
 	def transactionid(self):
+		
 		if self.transactionid_ == None:
 			self.transactionid_ = uuid.uuid4().hex
+		
 		return self.transactionid_
 
 
@@ -130,6 +135,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 
 
 	def process_request_thread(self, request, client_address, country_code, isssl):
+		
 		try:
 			if (request != None):
 				self.finish_request(request, client_address, country_code, isssl)
@@ -302,14 +308,11 @@ class CoreServer(BaseClass, ThreadingMixIn):
 			if (sock.proto != 0) or (sock.family != AF_INET) or (sock.fileno() == -1):
 				sock.close()
 				return sock, addr, False
-		
-			if (self.instanceid != 80):
 
-				# we generate a duplicate stream to check if the sock is ssl or not - if you try this on the default sock,
-				# the descriptor dies
-				
-				dup = sock.dup()
-				
+			# we do a simple wrap - if it fails, we pass...
+
+			if (self.instanceid == 443):
+
 				# this is where we map the certificate based upon the incoming host identifier
 				
 				def servercallback(sock, req_hostname, cb_context, as_callback=True, base=self):
@@ -332,23 +335,22 @@ class CoreServer(BaseClass, ThreadingMixIn):
 						
 						self.defaultcontext_ = context_
 					
-					sslsock = self.defaultcontext_.wrap_socket(dup, server_side=True)
+					sslsock = self.defaultcontext_.wrap_socket(sock.dup(), server_side=True)
 					sock = sslsock
 					isssl = True
 				
 				except ssl.SSLError as e:
 					
-					if e.errno == ssl.SSL_ERROR_EOF:
+					if (e.errno == ssl.SSL_ERROR_EOF):
 						# This is almost certainly due to the cherrypy engine
 						# 'pinging' the socket to assert it's connectable;
 						# the 'ping' isn't SSL.						
 						return None, {}, False
 					
-					elif e.errno == ssl.SSL_ERROR_SSL:
+					elif (e.errno == ssl.SSL_ERROR_SSL):
 						
 						if e.args[1].endswith('http request'):
 							self.log("HTTP Request over SSL")
-							dup.close()
 							# The client is speaking HTTP to an HTTPS server.
 							return sock, addr, False
 						
@@ -362,12 +364,12 @@ class CoreServer(BaseClass, ThreadingMixIn):
 						return None, {}, False
 
 				except Exception as inst:
-					pass
+					self.log("An exception occurred")
 
 		if (sock != None):
 			if (sock.fileno() != -1):
 				sock.settimeout(255)
-		
+
 		return sock, addr, isssl
 
 
