@@ -1,0 +1,9 @@
+{
+	"REQUIRE_SSL":0,
+	"REQUIRE_AUTH":0,
+	"PROMPT_AUTH":0,
+	"ENABLED":1,
+	"SERVICE_NAME":"*",
+    "HOST_NAMES":[],
+	"SUPPORTED_LANGS":["en"]
+}
