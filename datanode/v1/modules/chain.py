@@ -52,7 +52,6 @@ class ChainReader(BaseClass):
 	hash_ = None
 	state_ = None
 	transactions_ = None
-	fnAddTransactionsToHistory = None
 
 	def __init__(self, directory=None, chainid=None):
 		
@@ -62,7 +61,7 @@ class ChainReader(BaseClass):
 		self.directory_ = directory
 		self.hash_ = BASE_HASH
 		self.state_ = CHAIN_INITIALIZING
-		
+
 		NotificationCenter().postNotification(NOTIFY_CHAIN_INITIALIZED, self, None)
 
 		self.__preload()
@@ -324,18 +323,15 @@ class ChainReader(BaseClass):
 				break
 			
 			elif (len(transactions_) < MAX_TRANSACTIONS_BEFORE_FLUSH):
-				
-				if (self.fnAddTransactionsToHistory != None):
-					self.fnAddTransactionsToHistory(transactions_)
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
 				
 				self.transactions_ = transactions_
 				self.updateTransIndex((transactions_[-1].transId))
 				break
 		
 			else:
-				if (self.fnAddTransactionsToHistory != None):
-					self.fnAddTransactionsToHistory(transactions_)
-						
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
+
 				self.hash_ = shadowHash(transactions_, self.hash_)
 				
 				self.transactions_ = []
@@ -403,8 +399,7 @@ class ChainReader(BaseClass):
 				flush_.append(transaction_)
 				
 				# add transaction to the account history (for caching !!)
-				if (self.fnAddTransactionsToHistory != None):
-					self.fnAddTransactionsToHistory([transaction_])
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, [transaction_])
 
 				self.updateTransIndex(nextTransIndex_)
 				
@@ -419,7 +414,7 @@ class ChainReader(BaseClass):
 	
 	def readChain(self, startHash, functionToProcess=None, filter=None, since=0):
 		
-		if functionToProcess == None:
+		if (functionToProcess == None):
 			return [] # return empty set
 		
 		hash_ = startHash
@@ -481,6 +476,29 @@ class Chain(ChainReader):
 						out_.append(transaction_)
 				else:
 					out_.append(transaction_)
+		
+		return out_, False
+
+		
+	def filterTransactionsSince(self, transactionsIn=None, filter=None, since=0):
+		
+		out_ = []
+		
+		if (transactionsIn != None) and (len(transactionsIn) > 0):
+			
+			firstitem_ = transactionsIn[0]
+			
+			if (firstitem_.timestamp > since):
+				out_.extend(transactionsIn)
+			
+			else:
+				counter_ = 0
+				for transaction_ in transactionsIn:
+					if (transaction_.timestamp < since):
+						counter_ += 1
+					else:
+						out_.extend(transactionsIn[counter_:])
+						break
 		
 		return out_, False
 
@@ -628,10 +646,26 @@ class Chain(ChainReader):
 					
 		return []
 
+	
+	def getLastTransactions(self, count=0, base=BASE_HASH):
+	
+		currentindex_ = self.transId
+		
+		since_ = currentindex_ - count
+		if (since_ < 0):
+			since_ = 0
 
+		return self.getTransactionsFrom(since_, base)
+
+	
 	def getTransactionsFrom(self, transid=0, base=BASE_HASH):
 	
 		return self.readChain(base, self.filterTransactionsForIdsFrom, {"id":transid}, 0)
+
+	
+	def getTransactionsSince(self, since=0, base=BASE_HASH):
+		
+		return self.readChain(base, self.filterTransactionsSince, {}, since)
 
 
 	def writeTransactionsToChain(self, transactionsToWrite=None):
