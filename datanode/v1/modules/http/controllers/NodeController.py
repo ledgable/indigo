@@ -12,8 +12,8 @@ class NodeController(Controller):
 
 	
 	def chainById(self, chainid):
-		
-		chainid_ = chainid.lower()
+	
+		chainid_ = chainid.lower()		
 		return self.handler.server.manager.cnc.chainById(chainid_)
 
 	
@@ -65,6 +65,20 @@ class NodeController(Controller):
 		return shadowhash_, discarded_, deferred_
 
 
+	def lastTransactions(self, chainid, count=10, hash=BASE_HASH):
+		
+		chainctrl_ = self.chainById(chainid)
+		transactions_ = []
+		
+		if (chainctrl_ != None):
+			chain_ = chainctrl_.chain
+			
+			if (chain_ != None):
+				transactions_ = chain_.getLastTransactions(count, hash)
+
+		return transactions_
+
+	
 	def transactionsInBlock(self, chainid, hash=BASE_HASH):
 
 		chainctrl_ = self.chainById(chainid)

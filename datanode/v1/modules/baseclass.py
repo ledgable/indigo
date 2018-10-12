@@ -84,7 +84,6 @@ class RawVars(object, metaclass=Singleton):
 
 	@property
 	def debug(self):
-		
 		return self.debug_
 	
 	
@@ -95,13 +94,11 @@ class RawVars(object, metaclass=Singleton):
 	
 	@property
 	def stdout(self):
-		
 		return self.stdout_
 
 
 	@property
 	def stdin(self):
-		
 		return self.stdin_
 
 

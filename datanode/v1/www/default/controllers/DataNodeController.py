@@ -35,7 +35,7 @@ class DataNodeController(NodeController):
 
 	# retrieve transactions for node x (by hash or id of transaction)
 
-	@endpoint(1, False, True, None, "get", "^/api/(?P<chainid>[0-9a-f][^-&*/\%]*)/transactions/(?P<mode>(hash|id))/(?P<arg>[0-9a-f,][^-&*/\%]*)", "Get transactions for block in chain or by id")
+	@endpoint(1, False, True, None, "get", "^/api/(?P<chainid>[0-9a-f][^-&*/\%]*)/transactions/(?P<mode>(hash|id|last))/(?P<arg>[0-9a-f,][^-&*/\%]*)", "Get transactions for block in chain or by id")
 	def getTransactionsForChainInBlock(self, postData=None, appVars=None, chainid=None, mode="hash", arg=None):
 		
 		transactions_ = []
@@ -47,9 +47,12 @@ class DataNodeController(NodeController):
 			ids_ = list(map(int, arg.split(",")))
 			transactions_ = self.transactionByIds(chainid, ids_)
 
+		elif (mode =="last"):
+			count_ = int(arg)
+			transactions_ = self.lastTransactions(chainid, count_)
+						
 		return FunctionResponse(HTTP_OK, TYPE_JSON, {"chainid":chainid, "transactions":transactions_})
-
-			
+	
 	# retrieve transactions for node x where key equals value
 			
 	@endpoint(1, False, True, None, "get", "^/api/(?P<chainid>[0-9a-f][^-&*/\%]*)/transactions/key/(?P<key>[0-9a-z][^-&*/\%]*)/(?P<value>[0-9a-z][^-&*/\%]*)", "Get transactions for block for key with value")
