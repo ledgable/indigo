@@ -109,13 +109,16 @@ class RawVars(object, metaclass=Singleton):
 		mac_ = None
 		interfaces_ = netifaces.interfaces()
 		
-		for interface_ in interfaces_:
-			if (interface_ in interested):
+		for interface_ in interested:
+			
+			if (interface_ in interfaces_):
 				info_ = netifaces.ifaddresses(interface_)
+				
 				if (netifaces.AF_LINK in info_.keys()):
 					addressinfo_ = info_[netifaces.AF_LINK]
 					if (len(addressinfo_) > 0):
 						mac_ = (addressinfo_[0])["addr"]
+						break
 	
 		if (mac_ != None):
 			mac_ = mac_.replace(":", "")

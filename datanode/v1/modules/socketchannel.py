@@ -152,8 +152,19 @@ class SocketProtocol(Protocol, BaseClass):
 
 	def socketConnected(self, message):
 	
-		messageOut_ = {"trans":message.readString, "version":message.readString, "api":message.readInt, "sessionid":message.readString}
+		transid_ = message.readString
+		version_ = message.readString
+		api_ = message.readInt
+		sessionid_ = message.readString
 		
+		if (api_ > SOCKET_API_VERSION):
+			self.log("API of server is higher than my version - please update your client !!")
+			self.transport.loseConnection()
+			return
+		
+		else:
+			messageOut_ = {"trans":transid_, "version":version_, "api":api_, "sessionid":sessionid_}
+
 		self.log("Received connection message %s" % (messageOut_))
 		self.socketmgr_.connected_ = True
 		self.socketmgr_.connectionEstablished(self)

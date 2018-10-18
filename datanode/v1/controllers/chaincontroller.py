@@ -3,7 +3,7 @@ from modules import *
 
 from .configcontroller import *
 
-DEFAULT_KEYS = ["timestamp", "transid"]
+DEFAULT_KEYS = ["$time", "$id", "$class"]
 
 class ChainController(BaseClass):
 
@@ -197,36 +197,47 @@ class ChainController(BaseClass):
 				
 					committed_ = []
 					
-					# mutate the structure so that we have a dictionary with the field_name as the key
+					# we verify the structure of each transaction
+					allrecords_ = self.config.structure
+					allrecordsids_ = list(allrecords_.keys())
+					fieldchecker_ = {}
 					
-					structure_ = self.config.structure.toDict("field_name")
-					keys_ = list(structure_.keys())
-					keys_.extend(DEFAULT_KEYS)
+					for recordid_ in allrecordsids_:
+						# mutate the structure so that we have a dictionary with the field_name as the key
+						fieldchecker_[recordid_] = allrecords_[recordid_].toDict("field_name")
 					
 					for transaction_ in transactions:
-						
-						# we only copy over the data thats held in the keys
-						sanitizedtransaction_ = {}
-						
-						for key_ in keys_:
-							value_ = transaction_.get(key_, None)
-							if (value_ is not None):
-								sanitizedtransaction_[key_] = value_
+						typeid_ = transaction_.get("$class", None)
 					
-						doatransaction_ = ChainEntry(sanitizedtransaction_)
+						if (typeid_ != None) and (typeid_ in allrecordsids_):
+							structure_ = fieldchecker_[typeid_]
+							keys_ = list(structure_.keys())
+							keys_.extend(DEFAULT_KEYS)
 						
-						if (len(doatransaction_.keys()) > 0):
-							committed_.append(doatransaction_)
-						
+							# we only copy over the data thats held in the keys
+							sanitizedtransaction_ = {}
+
+							for key_ in keys_:
+								value_ = transaction_.get(key_, None)
+								if (value_ is not None):
+									sanitizedtransaction_[key_] = value_
+
+							doatransaction_ = ChainEntry(sanitizedtransaction_)
+
+							if (len(doatransaction_.keys()) > 0):
+								committed_.append(doatransaction_)
+
+							else:
+								# if the record is not compliant (ie no structure matches, we discard it)
+								discarded_.append(transaction_)
+					
 						else:
-							# if the record is not compliant (ie no structure matches, we discard it)
 							discarded_.append(transaction_)
 					
 					if (len(committed_) > 0):
 						shadowhash_ = self.chain_.writeTransactionsToChain(committed_)
 							
 					if (self.lock_ == self.deviceid):
-						
 						partners_ = self.findPartners([ACCESS_MASTER])
 												
 						transactionid_ = self.uniqueId
@@ -281,37 +292,48 @@ class ChainController(BaseClass):
 				committed_ = []
 				
 				# we verify the structure of each transaction
+				allrecords_ = self.config.structure
+				allrecordsids_ = list(allrecords_.keys())
+				fieldchecker_ = {}
 				
-				# mutate the structure so that we have a dictionary with the field_name as the key
-				structure_ = self.config.structure.toDict("field_name")
-				keys_ = list(structure_.keys())
-				keys_.extend(DEFAULT_KEYS)
-				
-				for transaction_ in transactions:
+				for recordid_ in allrecordsids_:
+					# mutate the structure so that we have a dictionary with the field_name as the key
+					fieldchecker_[recordid_] = allrecords_[recordid_].toDict("field_name")
 
-					# we only copy over the data thats held in the keys
-					sanitizedtransaction_ = {}
+				for transaction_ in transactions:
+					typeid_ = transaction_.get("$class", None)
+						
+					if (typeid_ != None) and (typeid_ in allrecordsids_):
+						structure_ = fieldchecker_[typeid_]
+						keys_ = list(structure_.keys())
+						keys_.extend(DEFAULT_KEYS)
+
+						# we only copy over the data thats held in the keys
+						sanitizedtransaction_ = {}
+						
+						for key_ in keys_:
+							value_ = transaction_.default(key_, None)
+							if (value_ is not None):
+								sanitizedtransaction_[key_] = value_
 					
-					for key_ in keys_:
-						value_ = transaction_.default(key_, None)
-						if (value_ is not None):
-							sanitizedtransaction_[key_] = value_
-				
-					doatransaction_ = ChainEntry(sanitizedtransaction_)
-					
-					if (len(doatransaction_.keys()) > 0):
-						committed_.append(doatransaction_)
-					
+						doatransaction_ = ChainEntry(sanitizedtransaction_)
+						
+						if (len(doatransaction_.keys()) > 0):
+							committed_.append(doatransaction_)
+						
+						else:
+							# if the record is not compliant (ie no structure matches, we discard it)
+							discarded_.append(transaction_)
+		
 					else:
-						# if the record is not compliant (ie no structure matches, we discard it)
 						discarded_.append(transaction_)
 
 				if (len(committed_) > 0):
 					shadowhash_ = self.chain_.writeTransactionsToChain(committed_)
-						
-			else:
-				shadowhash_ = self.chain_.writeTransactionsToChain(transactions)
 
+			else:
+				discarded_ = transactions
+						
 		return shadowhash_, discarded_
 
 

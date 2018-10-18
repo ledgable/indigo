@@ -19,7 +19,7 @@ class MainApp(BaseClass):
 	server_ = "indexer.ledgable.com:9908"
 	
 	application_ = None
-	mode_ = "console"
+	mode_ = "node"
 	deviceid_ = None
 	devicepin_ = None
 	chainid_ = None
@@ -100,7 +100,7 @@ class MainApp(BaseClass):
 			signal(sig, signal_handler)
 
 		try:
-			opts, args = getopt.getopt(argv,"hl:m:d:p:s:c:o:r:",["help","listen=","mode=","deviceid=","pin=","server=","chain=","httpport=","register=", "debug"])
+			opts, args = getopt.getopt(argv,"hl:d:p:s:c:o:r:",["help","listen=","deviceid=","pin=","server=","chain=","httpport=","register=", "debug"])
 		
 		except getopt.GetoptError as e:
 			self.log("Issue with arguments - quitting")
@@ -110,10 +110,8 @@ class MainApp(BaseClass):
 		for opt, arg in opts:
 			if opt == "-h":
 				self.listenon_ = None
-			elif opt in ("-m", "--mode"):
-				self.mode_ = arg
 			elif opt in ("-d", "--deviceid"):
-				self.deviceid_ = arg
+				self.deviceid_ = arg.lower()
 			elif opt in ("-o", "--httpport"):
 				self.httpports_ = map(int, arg.split(","))
 			elif opt in ("-p", "--pin"):
@@ -145,7 +143,6 @@ class MainApp(BaseClass):
 
 		else:
 			
-			self.log("Application mode = %s" % (self.mode_))
 			self.log("Current directory = %s" % (self.root_))
 
 			# the main data directory !!
@@ -189,19 +186,11 @@ class MainApp(BaseClass):
 					self.log("Missing pin code - Quitting")
 					os._exit(0)
 
-			if (self.mode_ == "node"):
-				
-				if (self.httpports_ != None):
-					self.httpserver_ = HttpManager(self, self.httpports_)
+			if (self.httpports_ != None):
+				self.httpserver_ = HttpManager(self, self.httpports_)
 
-				self.application_ = DataNodeApplication(self)
+			self.application_ = DataNodeApplication(self)
 
-			elif (self.mode_ == "console"):
-				
-				self.application_ = ConsoleApplication(self)
-
-			else:
-				os._exit(0)
 
 def main(argv):
 	app = MainApp(argv)

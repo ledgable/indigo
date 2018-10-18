@@ -5,7 +5,7 @@ from dataobjects import *
 from .baseclass import *
 from .switch import *
 
-DEFAULT_KEYS = ["timestamp", "transid"]
+DEFAULT_KEYS = ["$time", "$id"]
 MAX_TRANSACTIONS_BEFORE_FLUSH = 1024
 BASE_HASH = "00000000000"
 
@@ -326,7 +326,7 @@ class ChainReader(BaseClass):
 				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
 				
 				self.transactions_ = transactions_
-				self.updateTransIndex((transactions_[-1].transId))
+				self.updateTransIndex((transactions_[-1]["$id"]))
 				break
 		
 			else:
@@ -335,7 +335,7 @@ class ChainReader(BaseClass):
 				self.hash_ = shadowHash(transactions_, self.hash_)
 				
 				self.transactions_ = []
-				self.updateTransIndex((transactions_[-1].transId))
+				self.updateTransIndex((transactions_[-1]["$id"]))
 
 		self.state_ = CHAIN_READY
 		
@@ -362,8 +362,8 @@ class ChainReader(BaseClass):
 			nextTransIndex_ = self.transId + 1
 			oktowrite_ = True
 			
-			if (transaction_.transId != None):
-				if (transaction_.transId == nextTransIndex_):
+			if (transaction_["$id"] != None):
+				if (transaction_["$id"] == nextTransIndex_):
 					pass # all ok - seems like the transaction ids match!
 				
 				else:
@@ -373,14 +373,14 @@ class ChainReader(BaseClass):
 					oktowrite_ = False
 		
 			else:
-				transaction_.transId = nextTransIndex_
+				transaction_["$id"] = nextTransIndex_
 
 			if (oktowrite_):
-			
+							
 				# if there is no epoch in the record, add one
 				
-				if (transaction_.timestamp == None): # we dont change the epoch if it is already there..
-					transaction_.timestamp = now_
+				if (transaction_["$time"] == None): # we dont change the epoch if it is already there..
+					transaction_["$time"] = now_
 			
 				if (len(self.transactions_) == MAX_TRANSACTIONS_BEFORE_FLUSH):
 					
@@ -472,7 +472,7 @@ class Chain(ChainReader):
 			
 			for transaction_ in transactionsIn:
 				if (filter != None):
-					if (transaction_.transid in filter["ids"]):
+					if (transaction_["$id"] in filter["ids"]):
 						out_.append(transaction_)
 				else:
 					out_.append(transaction_)
@@ -488,13 +488,13 @@ class Chain(ChainReader):
 			
 			firstitem_ = transactionsIn[0]
 			
-			if (firstitem_.timestamp > since):
+			if (firstitem_["$time"] > since):
 				out_.extend(transactionsIn)
 			
 			else:
 				counter_ = 0
 				for transaction_ in transactionsIn:
-					if (transaction_.timestamp < since):
+					if (transaction_["$time"] < since):
 						counter_ += 1
 					else:
 						out_.extend(transactionsIn[counter_:])
@@ -515,15 +515,15 @@ class Chain(ChainReader):
 			
 			firstitem_ = transactionsIn[0]
 
-			if (firstitem_.transid > id_):
+			if (firstitem_["$id"] > id_):
 				out_.extend(transactionsIn)
 			
-			elif ((firstitem_.transid + MAX_TRANSACTIONS_BEFORE_FLUSH) < id_):
+			elif ((firstitem_["$id"] + MAX_TRANSACTIONS_BEFORE_FLUSH) < id_):
 				pass
 					
 			else:
 				for transaction_ in transactionsIn:
-					if (transaction_.transid > id_):
+					if (transaction_["$id"] > id_):
 						out_.append(transaction_)
 	
 		return out_, False

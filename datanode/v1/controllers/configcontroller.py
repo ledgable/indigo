@@ -282,6 +282,9 @@ class ConfigController(BaseClass, metaclass=Singleton):
 	
 		systemtype_ = sys.platform
 		transid_ = self.uniqueId
+		serviceid_ = RawVars().serviceid
+		
+		self.log("Using serviceid = %s" % serviceid_)
 		
 		message_ = MessageWriter()
 		message_.writeByte(SOCKET_MESSAGE_REGISTER)
@@ -290,7 +293,7 @@ class ConfigController(BaseClass, metaclass=Singleton):
 		message_.writeString(self.deviceid)
 		message_.writeString(self.manager_.appInstance_.devicepin)
 		message_.writeString(self.manager_.appInstance_.mode)
-		message_.writeString(RawVars().serviceid)
+		message_.writeString(serviceid_)
 
 		addressparts_ = ("0.0.0.0", 0)
 
