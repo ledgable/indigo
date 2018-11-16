@@ -491,24 +491,25 @@ class MyHandler(CoreHandler):
 	def do_ACTION(self, action, hostname=None):
 		
 		vars_ = DAOObject()
-				
-		if self.useSSL:
-			vars_.scheme = HTTPS
-		else:
-			vars_.scheme = HTTP
 		
 		setattrs(vars_,
-				 time = time.time(),
-				 path = urlparse(self.path),
-				 ipaddress = self.ipaddress,
-				 browser = "unknown",
-				 country_code = self.country_code,
-				 session_id = None,
-				 device_id = None,
-				 isajax = False,
-				 language = "en",
-				 allowcompression = False
-				 )
+			scheme = HTTP,
+			time = time.time(),
+			path = urlparse(self.path),
+			ipaddress = self.ipaddress,
+			browser = "unknown",
+			country_code = self.country_code,
+			session_id = None,
+			device_id = None,
+			isajax = False,
+			language = "en",
+			allowcompression = False
+			)
+
+		exitcode_ = HTTP_OK
+
+		if self.useSSL:
+			vars_.scheme = HTTPS
 
 		self.transvars = DAOObject()
 
@@ -759,7 +760,6 @@ class MyHandler(CoreHandler):
 				response_ = None
 				function_ = None
 				format_ = None
-				exitcode_ = HTTP_OK
 				length_ = 0
 
 				try:
@@ -1004,8 +1004,8 @@ class MyHandler(CoreHandler):
 							self.close_connection = 0
 
 						return
-			
-		self.send_response(HTTP_OK)
+							
+		self.send_response(exitcode_)
 		self.send_header("Content-Type", "text/html")
 		self.send_header("Connection", "Close")
 		self.end_headers()
