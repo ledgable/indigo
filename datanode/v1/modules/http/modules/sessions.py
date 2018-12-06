@@ -24,6 +24,8 @@ from modules.repeater import *
 
 from dataobjects import *
 
+TIMEOUT = 10
+
 #####################################
 ####
 ####  Runtime Session Manager
@@ -63,7 +65,7 @@ class SessionMgr(BaseClass):
 		
 		for key_ in keys_:
 			session_ = self.sessions_[key_]
-			if (session_.date_updated) < (now_ - 120):
+			if (session_.date_updated) < (now_ - TIMEOUT):
 				self.log("Session %s invalidated" % key_)
 				del self.sessions_[key_]
 	

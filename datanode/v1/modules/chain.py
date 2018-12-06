@@ -116,9 +116,11 @@ class ChainReader(BaseClass):
 		folder_ = hash[:3] # first 3 chars of hash
 		directoryfull_ = ("%s/%s" % (self.directory_, folder_))
 		
-		if (not os.path.exists(directoryfull_)):
-			os.makedirs(directoryfull_)
-		
+		try:
+			if (not os.path.exists(directoryfull_)):
+				os.makedirs(directoryfull_)
+		except Exception as inst:
+			pass
 		return ("%s/%s" % (directoryfull_, filename_))
 
 
@@ -369,7 +371,6 @@ class ChainReader(BaseClass):
 				else:
 					# we have a chain issue - either someone is messing around (id is used by someone / something else)
 					# or we have a communication from a node which doesnt quite align..
-					pass
 					oktowrite_ = False
 		
 			else:
@@ -394,14 +395,14 @@ class ChainReader(BaseClass):
 					# start a new block
 					self.transactions_ = []
 				
+				self.updateTransIndex(nextTransIndex_)
+
 				# push the transaction into the current list
 				self.transactions_.append(transaction_)
 				flush_.append(transaction_)
-				
+
 				# add transaction to the account history (for caching !!)
 				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, [transaction_])
-
-				self.updateTransIndex(nextTransIndex_)
 				
 		if (len(flush_) > 0):
 			self.flushToDisk(flush_)
