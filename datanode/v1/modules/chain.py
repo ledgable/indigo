@@ -47,6 +47,7 @@ def shadowHash(transactions=[], basehash=BASE_HASH):
 class ChainReader(BaseClass):
 
 	uid_ = None
+	buffer_ = None
 	directory_ = None
 	transid_ = 0
 	hash_ = None
@@ -56,11 +57,15 @@ class ChainReader(BaseClass):
 	def __init__(self, directory=None, chainid=None):
 		
 		self.transactions_ = []
+		self.buffer_ = []
 		self.uid_ = chainid
 		self.transid_ = 0
 		self.directory_ = directory
 		self.hash_ = BASE_HASH
 		self.state_ = CHAIN_INITIALIZING
+		
+		self.flusher_ = Repeater(10.0, self.flush, self)
+		self.flusher_.start()
 
 		NotificationCenter().postNotification(NOTIFY_CHAIN_INITIALIZED, self, None)
 
@@ -325,19 +330,17 @@ class ChainReader(BaseClass):
 				break
 			
 			elif (len(transactions_) < MAX_TRANSACTIONS_BEFORE_FLUSH):
-				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
-				
 				self.transactions_ = transactions_
 				self.updateTransIndex((transactions_[-1]["$id"]))
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
 				break
 		
 			else:
-				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
-
 				self.hash_ = shadowHash(transactions_, self.hash_)
-				
+				self.log("New hash = %s" % self.hash_)
 				self.transactions_ = []
 				self.updateTransIndex((transactions_[-1]["$id"]))
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
 
 		self.state_ = CHAIN_READY
 		
@@ -348,6 +351,39 @@ class ChainReader(BaseClass):
 	
 	# write transactions to disk..
 	
+	def flush(self, args):
+	
+		if (len(self.buffer_) > 0):
+			
+			transactions_ = self.buffer_			
+			self.buffer_ = []
+			transactionstowrite_ = []
+			
+			for transaction_ in transactions_:
+				
+				if (len(self.transactions_) == MAX_TRANSACTIONS_BEFORE_FLUSH):
+					
+					if (len(transactionstowrite_) > 0):
+						self.flushToDisk(transactionstowrite_)
+						transactionstowrite_ = []
+						NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactionstowrite_)
+
+					# we need to calculate the next hash !!
+					self.hash_ = shadowHash(self.transactions_, self.hash_)
+
+					# start a new block
+					transactionstowrite_ = []
+					self.transactions_ = []
+						
+				transactionstowrite_.append(transaction_)
+				self.transactions_.append(transaction_)
+			
+			if (len(transactionstowrite_) > 0):
+				self.flushToDisk(transactionstowrite_)
+				
+			# add transaction to the account history (for caching !!)
+			NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactionstowrite_)
+
 	def writeTransactionsToChain(self, transactionsToWrite=None):
 	
 		if (self.state_ == CHAIN_INITIALIZING):
@@ -382,33 +418,11 @@ class ChainReader(BaseClass):
 				
 				if (transaction_["$time"] == None): # we dont change the epoch if it is already there..
 					transaction_["$time"] = now_
-			
-				if (len(self.transactions_) == MAX_TRANSACTIONS_BEFORE_FLUSH):
-					
-					if len(flush_) > 0:
-						self.flushToDisk(flush_)
-						flush_ = []
-				
-					# we need to calculate the next hash !!
-					self.hash_ = shadowHash(self.transactions_, self.hash_)
-			
-					# start a new block
-					self.transactions_ = []
-				
+
 				self.updateTransIndex(nextTransIndex_)
+				self.buffer_.append(transaction_)
 
-				# push the transaction into the current list
-				self.transactions_.append(transaction_)
-				flush_.append(transaction_)
-
-				# add transaction to the account history (for caching !!)
-				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, [transaction_])
-				
-		if (len(flush_) > 0):
-			self.flushToDisk(flush_)
-
-		self.log("Shadowhash for chain '%s' = '%s'" % (self.uid_, self.shadowHash))
-
+			
 		return self.shadowHash
 	
 	# read contents of chain using a function to interate over the contents
