@@ -92,7 +92,7 @@ class MyHandler(CoreHandler):
 	def __init__(self, request, client_address, server, country_code, isssl=False):
 		CoreHandler.__init__(self, request, client_address, server, country_code, isssl)
 
-
+	
 	@property
 	def CONFIG(self):
 		return self.apphandler.config_
@@ -775,12 +775,12 @@ class MyHandler(CoreHandler):
 						
 								if (length_ > 0):
 
-									if (vars_.allowcompression):
-										rawData_ = self.rfile.read(length_)
-										postData_ = zlib.decompress(rawData_)
-
-									else:
-										postData_ = self.rfile.read(length_)
+#									if (vars_.allowcompression):
+#										rawData_ = self.rfile.read(length_)
+#										postData_ = zlib.decompress(rawData_)
+#
+#									else:
+									postData_ = self.rfile.read(length_)
 									
 						module_ = self.CONTROLLERS.controllerForId(routefound_.controller)
 												

@@ -46,21 +46,20 @@ class NotificationCenter(metaclass=Singleton):
 
 	def threadedPostNotification(self, named, caller=None, object=None):
 	
-		named_ = named.lower()
-		
-		if (named_ in self.listeners_.keys()):
-			observers_ = self.listeners_[named_]
-			
+		observers_ = self.listeners_[named]
+
+		if (len(observers_) > 0):
 			for observer_ in observers_:
-				if (observer_):
-					observer_(caller, object)
+				observer_(caller, object)
 
 
 	def postNotification(self, named, caller=None, object=None):
 	
-		t = threading.Thread(target=self.threadedPostNotification, args=[named, caller, object])
-		t.daemon = True
-		t.start()
+		named_ = named.lower()
+		if (named_ in self.listeners_.keys()):
+			t = threading.Thread(target=self.threadedPostNotification, args=[named_, caller, object])
+			t.daemon = True
+			t.start()
 	
 	
 	def __init__(self):

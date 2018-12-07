@@ -53,6 +53,7 @@ class HTTPApplication(BaseClass):
 	def __init__(self, manager):
 		self.manager_ = manager
 
+
 class Definition(BaseClass):
 	
 	def __init__(self, hidden, tracksession, auth, method, controller, function, regx, description, weight=0, site="*"):
@@ -281,6 +282,7 @@ class AppRoutes(BaseClass):
 				self.logException(inst)
 
 		return routefound_
+
 
 class ControllerManager(BaseClass):
 	

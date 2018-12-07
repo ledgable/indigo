@@ -43,8 +43,9 @@ class SessionMgr(BaseClass):
 		sessionkeys_ = list(self.sessions_.keys())
 		
 		if (sessionid in sessionkeys_):
-			self.log("Invalidating session %s due to change" % sessionid)
+			session_ = self.sessions_[sessionid]
 			del self.sessions_[sessionid]
+			del session_
 		
 		# reload the session info
 		return self.sessionForId(sessionid)
@@ -66,8 +67,9 @@ class SessionMgr(BaseClass):
 		for key_ in keys_:
 			session_ = self.sessions_[key_]
 			if (session_.date_updated) < (now_ - TIMEOUT):
-				self.log("Session %s invalidated" % key_)
+				session_ = self.sessions_[key_]
 				del self.sessions_[key_]
+				del session_
 	
 	def sessionForId(self, sessionid):
 

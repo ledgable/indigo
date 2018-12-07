@@ -3,6 +3,7 @@ import re
 import threading
 import json
 import os
+import gc
 import os.path
 import html
 import hashlib
@@ -72,7 +73,14 @@ class RawVars(object, metaclass=Singleton):
 	serviceid_ = None
 	lasttext_ = ""
 	debug_ = False
+	timer_ = None
 
+	
+	def poller(self, args):
+	
+		gc.collect()
+	
+	
 	def writeOut(self, str):
 		
 		if (str[-1:1] != "\n"):
@@ -128,9 +136,13 @@ class RawVars(object, metaclass=Singleton):
 	
 	def __init__(self):
 		
+		gc.disable()
+		
 		self.stdout_ = sys.stdout
 		self.stdin_ = sys.stdin
 		self.serviceid_ = self.getHwAddr()
+		self.timer_ = Repeater(10.0, self.poller, self)
+		self.timer_.start()
 
 
 # some common functionality used by alot of code - we place it here to ensure we dont replicate code etc
@@ -192,7 +204,7 @@ class BaseClass(object):
 		
 		return BaseClass.hash(stringin)
 
-
+	
 	@property
 	def now(self, timezone="CET"):
 		

@@ -15,11 +15,14 @@ class HttpManager(BaseClass):
 	
 	def serve_forever(self):
 		
-		while self.listening_:
-			readers_, writers_, exceptions_ = select.select(self.servers, [],[])
-			for server_ in readers_:
-				server_._handle_request_noblock()
-
+		try:
+			while self.listening_:
+				readers_, writers_, exceptions_ = select.select(self.servers, [], [])
+				for server_ in readers_:
+					server_._handle_request_noblock()
+		
+		finally:
+			pass
 
 	def __init__(self, manager=None, httpPorts=0):
 		

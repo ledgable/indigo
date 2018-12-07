@@ -384,6 +384,7 @@ class ChainReader(BaseClass):
 			# add transaction to the account history (for caching !!)
 			NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactionstowrite_)
 
+	
 	def writeTransactionsToChain(self, transactionsToWrite=None):
 	
 		if (self.state_ == CHAIN_INITIALIZING):

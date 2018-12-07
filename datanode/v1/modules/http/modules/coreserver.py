@@ -70,7 +70,7 @@ class CoreHandler(BaseClass, BaseHTTPRequestHandler):
 	transactionid_ = None
 	timestart_ = 0
 
-
+	
 	@property
 	def socket(self):
 		try:
@@ -100,7 +100,7 @@ class CoreHandler(BaseClass, BaseHTTPRequestHandler):
 	@property
 	def transactionid(self):
 		
-		if self.transactionid_ == None:
+		if (self.transactionid_ == None):
 			self.transactionid_ = uuid.uuid4().hex
 		
 		return self.transactionid_
@@ -139,12 +139,13 @@ class CoreServer(BaseClass, ThreadingMixIn):
 		try:
 			if (request != None):
 				self.finish_request(request, client_address, country_code, isssl)
+	
 		except:
-			if request != None:
+			if (request != None):
 				self.handle_error(request, client_address)
+		
 		finally:
-			if request != None:
-				self.shutdown_request(request)
+			self.shutdown_request(request)
 
 
 	def process_request(self, request, client_address, country_code, isssl):
@@ -167,16 +168,16 @@ class CoreServer(BaseClass, ThreadingMixIn):
 				request_ = self.requestById(transactionid_)
 				newtime_ = now_ - request_.timestart_
 				
-				if newtime_ > 10:
+				if (newtime_ > 10):
+					HTTPServer.close_request(self, request_.request)
 					self.removeRequestWithTransaction(transactionid_)
-					self.log(("Closing transaction - been open too long - %s" % transactionid_), "info")
-					request_.server.shutdown_request(request_.request)
-
+					del request_
+	
 
 	def requestById(self, transactionid):
 		if transactionid in self.requests_.keys():
 			return self.requests_[transactionid]
-			return None
+		return None
 
 
 	def addRequestWithTransaction(self, request):
@@ -189,7 +190,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 		if transactionid in self.requests_.keys():
 			request_ = self.requests_[transactionid]
 			del self.requests_[transactionid]
-			request_ = None
+			del request_
 
 
 	@property
@@ -216,7 +217,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 		self.socket.settimeout(5)
 		
 		self.run_ = True
-		self.timer_ = Repeater(30.0, self.poller, self)
+		self.timer_ = Repeater(10.0, self.poller, self)
 		self.timer_.start()
 
 
@@ -293,7 +294,6 @@ class CoreServer(BaseClass, ThreadingMixIn):
 		addr = None
 		isssl = False
 		sslsock = None
-		dup = None
 		
 		try:
 			sock, addr = self.socket.accept()
@@ -368,7 +368,7 @@ class CoreServer(BaseClass, ThreadingMixIn):
 
 		if (sock != None):
 			if (sock.fileno() != -1):
-				sock.settimeout(255)
+				sock.settimeout(200)
 
 		return sock, addr, isssl
 
@@ -382,15 +382,22 @@ class CoreServer(BaseClass, ThreadingMixIn):
 		
 		try:
 			request, client_address, isssl = self.get_request()
-	
+
+			requestvalid_, country_code = self.verify_request(request, client_address)
+		
+			if (requestvalid_):
+				self.process_request(request, client_address, country_code, isssl)
+
+			else:
+				if (request != None):
+					self.shutdown_request(request)
+
 		except OSError as inst:
 			self.logException(inst)
 		
 			if (request != None):
 				self.handle_error(request, client_address)
 				self.shutdown_request(request)
-
-			return
 	
 		except Exception as inst:
 			self.logException(inst)
@@ -399,38 +406,16 @@ class CoreServer(BaseClass, ThreadingMixIn):
 				self.handle_error(request, client_address)
 				self.shutdown_request(request)
 			
-			return
-		
-		requestvalid_, country_code = self.verify_request(request, client_address)
-		
-		if (requestvalid_):
-			
-			try:
-				self.process_request(request, client_address, country_code, isssl)
-			
-			except Exception:
-				if (request != None):
-					self.handle_error(request, client_address)
-					self.shutdown_request(request)
-		
-			except:
-				if (request != None):
-					self.shutdown_request(request)
-				raise
-
-		else:
-			if (request != None):
-				self.shutdown_request(request)
-
 
 	def close_request(self, request):
 	
 		if (request is None):
 			return
-		
+				
 		HTTPServer.close_request(self, request)
+		del request
 
-
+			
 	def stop(self):
 		
 		self.run_ = False
