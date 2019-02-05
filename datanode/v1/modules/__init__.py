@@ -10,6 +10,7 @@ from .daoobject import *
 from .chain import *
 from .socketchannel import *
 from .transactiontracker import *
+from .applicationmanager import *
 from .ipblocker import *
 from .tree import *
 

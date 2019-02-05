@@ -1,6 +1,7 @@
 
 from modules.http.controllers.Controller import *
 from modules.chain import *
+from modules.applicationmanager import *
 
 # Common functionality to enable access to chains etc
 
@@ -12,17 +13,25 @@ class NodeController(Controller):
 
 	
 	def chainById(self, chainid):
-	
-		chainid_ = chainid.lower()		
-		return self.handler.server.manager.cnc.chainById(chainid_)
+		
+		chainid_ = chainid.lower()
+		application_ = ApplicationManager(self).get("datanode")
+		
+		if (application_ != None):
+			return application_.chainById(chainid_)
+		
+		return None
 
 	
 	def chains(self):
-	
-		configctrl_ = self.handler.server.manager.cnc.configctrl
-	
-		if (configctrl_ != None):
-			return configctrl_.chains
+		
+		application_ = ApplicationManager(self).get("datanode")
+		
+		if (application_ != None):
+			configctrl_ = application_.configctrl
+			
+			if (configctrl_ != None):
+				return configctrl_.chains
 		
 		return None
 
@@ -30,10 +39,13 @@ class NodeController(Controller):
 	def configForChain(self, chainid):
 		
 		chainid_ = chainid.lower()
-		configctrl_ = self.handler.server.manager.cnc.configctrl
+		application_ = ApplicationManager(self).get("datanode")
 		
-		if (configctrl_ != None):
-			return configctrl_.configForChain(chainid_)
+		if (application_ != None):
+			configctrl_ = application_.configctrl
+			
+			if (configctrl_ != None):
+				return configctrl_.configForChain(chainid_)
 
 		return None
 

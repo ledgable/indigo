@@ -38,7 +38,9 @@ class DataNodeApplication(BaseApplication):
 		BaseApplication.__init__(self, appInstance)
 
 		# we create one listening service for a node - the port ids should never be the same !!
-		
+
+		NotificationCenter().addObserver(NOTIFY_CONFIG_CHANGED, self.configUpdated)
+
 		devicecert_ = ("%s.cer" % self.deviceid)
 
 		self.server_ = SocketServer((self.appInstance.listenon), self.messageReceived, self.deviceConnected, self.deviceDisconnected, devicecert_)
@@ -357,11 +359,12 @@ class DataNodeApplication(BaseApplication):
 						self.log("Access from an unauthorized node")
 
 
-	def configUpdated(self):
+	def configUpdated(self, configctl, info):
 	
 		self.log("Informed that configuration is updated or has loaded!")
 		
-		chainids_ = list(self.configctrl_.chains)
+		chainids_ = list(configctl.chains)
+		
 		currentchains_ = list(self.chains_.keys())
 		toremove_ = list(self.chains_.keys())
 		

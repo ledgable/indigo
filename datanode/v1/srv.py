@@ -18,11 +18,9 @@ class MainApp(BaseClass):
 	listenon_ = "0.0.0.0:9996"
 	server_ = "indexer.ledgable.com:9908"
 	
-	application_ = None
-	mode_ = "node"
+	applications_ = None	
 	deviceid_ = None
 	devicepin_ = None
-	chainid_ = None
 	httpserver_ = None
 	httpports_ = None
 	datadir_ = None
@@ -48,12 +46,12 @@ class MainApp(BaseClass):
 		return self.listenon_
 	
 	@property
-	def chainid(self):
-		return self.chainid_
+	def devicedir(self):
+		return self.datadir + ("/%s" % self.deviceid)
 	
 	@property
-	def mode(self):
-		return self.mode_
+	def configdir(self):
+		return self.devicedir + "/config"
 	
 	@property
 	def deviceid(self):
@@ -68,16 +66,16 @@ class MainApp(BaseClass):
 		return self.server_
 	
 	@property
-	def cnc(self):
-		return self.application_
+	def applications(self):
+		return self.applications_
 	
 	def shutdown(self, reason="No Reason"):
 		
 		self.log("Shutdown invoked | Reason = \033[31m%s\033[0m" % (reason))
 		self.listening_ = False
 		
-		if (self.application_ != None):
-			self.application_.shutdown()
+		if (self.applications_ != None):
+			self.applications_.shutdown()
 		
 		self.log("Shutdown completed")
 		sys.exit(0)
@@ -100,7 +98,7 @@ class MainApp(BaseClass):
 			signal(sig, signal_handler)
 
 		try:
-			opts, args = getopt.getopt(argv,"hl:d:p:s:c:o:r:",["help","listen=","deviceid=","pin=","server=","chain=","httpport=","register=", "debug"])
+			opts, args = getopt.getopt(argv,"hl:d:p:s:o:r:",["help","listen=","deviceid=","pin=","server=","httpport=","register=", "debug"])
 		
 		except getopt.GetoptError as e:
 			self.log("Issue with arguments - quitting")
@@ -122,8 +120,6 @@ class MainApp(BaseClass):
 				self.register_ = arg
 			elif opt in ("-s", "--server"):
 				self.server_ = arg
-			elif opt in ("-c", "--chain"):
-				self.chainid_ = arg
 			elif opt in ("--debug"):
 				RawVars().debug_ = True
 
@@ -189,7 +185,13 @@ class MainApp(BaseClass):
 			if (self.httpports_ != None):
 				self.httpserver_ = HttpManager(self, self.httpports_)
 
-			self.application_ = DataNodeApplication(self)
+			configmanager_ = ConfigController(self, self.server)
+			configmanager_.start()
+			
+			self.applications_ = ApplicationManager(self)
+			
+			ApplicationManager(self).start("config", configmanager_)
+			ApplicationManager(self).start("datanode", DataNodeApplication(self))
 
 
 def main(argv):

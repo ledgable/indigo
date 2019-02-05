@@ -23,10 +23,10 @@ from modules import *
 class ConfigController(BaseClass, metaclass=Singleton):
 
 	manager_ = None
-	fnconfigupdated_ = None
 	connectionconfig_ = None
 	config_ = None
 	timer_ = None
+	
 	
 	@property
 	def config(self):
@@ -40,7 +40,7 @@ class ConfigController(BaseClass, metaclass=Singleton):
 
 	@property
 	def root(self):
-		return self.manager_.appInstance_.root_
+		return self.manager_.root_
 
 
 	def configForChain(self, chainid):
@@ -94,8 +94,8 @@ class ConfigController(BaseClass, metaclass=Singleton):
 					self.log("Found chain = %s" % chainid_)
 					self.config_[chainid_] = newchain_
 
-			if (self.fnconfigupdated_ != None) and configchanged_:
-				self.fnconfigupdated_()
+			if (configchanged_):
+				NotificationCenter().postNotification(NOTIFY_CONFIG_CHANGED, self, None)
 
 
 	def commitConfig(self, config=None):
@@ -153,8 +153,7 @@ class ConfigController(BaseClass, metaclass=Singleton):
 		
 		self.config_ = DAOObject(config)
 		
-		if (self.fnconfigupdated_ != None):
-			self.fnconfigupdated_()
+		NotificationCenter().postNotification(NOTIFY_CONFIG_CHANGED, self, None)
 
 
 	def forNode(self, nodeid=None):
@@ -168,7 +167,7 @@ class ConfigController(BaseClass, metaclass=Singleton):
 
 	@property
 	def deviceid(self):
-		return self.manager_.appInstance.deviceid
+		return self.manager_.deviceid
 
 
 	def sendGetConfig(self, socket=None):
@@ -291,20 +290,20 @@ class ConfigController(BaseClass, metaclass=Singleton):
 		
 		message_.writeString(transid_)
 		message_.writeString(self.deviceid)
-		message_.writeString(self.manager_.appInstance_.devicepin)
-		message_.writeString(self.manager_.appInstance_.mode)
+		message_.writeString(self.manager_.devicepin)
+		message_.writeString("node")
 		message_.writeString(serviceid_)
 
 		addressparts_ = ("0.0.0.0", 0)
 
-		if (self.manager_.appInstance_.register != "0.0.0.0"):
-			parts_ = self.manager_.appInstance_.register.split(":")
+		if (self.manager_.register != "0.0.0.0"):
+			parts_ = self.manager_.register.split(":")
 			
 			if (len(addressparts_) == 2):
 				addressparts_ = (parts_[0], int(parts_[1]))
 
 		else:
-			parts_ = self.manager_.appInstance_.listenon.split(":")
+			parts_ = self.manager_.listenon.split(":")
 			if (len(parts_) == 2):
 				addressparts_ = ("0.0.0.0", int(parts_[1]))
 
@@ -332,6 +331,11 @@ class ConfigController(BaseClass, metaclass=Singleton):
 			self.connectionconfig_ = TimedSocketConnectionOut(None, self.destination_, self.messageReceived, self.connectSuccess, self.disconnectSuccess, None, "indexer.pem")
 
 
+	def shutdown(self):
+
+		self.timer_.stop()
+
+
 	def start(self):
 		
 		self.loadConfig()
@@ -347,10 +351,9 @@ class ConfigController(BaseClass, metaclass=Singleton):
 		self.pollForConfig(None)
 		
 
-	def __init__(self, manager=None, destination=None, fnconfigupdated=None):
+	def __init__(self, manager=None, destination=None):
 		
 		self.config_ = {}
 		self.destination_ = destination
 		self.manager_ = manager
-		self.fnconfigupdated_ = fnconfigupdated
 

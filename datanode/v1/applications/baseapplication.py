@@ -14,7 +14,9 @@ class BaseApplication(BaseClass, metaclass=Singleton):
 	
 	@property
 	def configctrl(self):
-		return self.configctrl_
+		
+		application_ = ApplicationManager(self).get("config")
+		return application_
 	
 	
 	@property
@@ -76,12 +78,6 @@ class BaseApplication(BaseClass, metaclass=Singleton):
 
 		success_ = self.createDirectories()
 
-		if (success_):
-			self.configctrl_ = ConfigController(self, self.appInstance.server, self.configUpdated)
-			self.configctrl_.start()
-
-		else:
-			self.appInstance.shutdown("Configuration issue wrt CNC")
 
 
 
