@@ -1,5 +1,5 @@
 
-from modules.http.controllers.Controller import *
+from www.__common.controllers.Controller import *
 
 class TestController(Controller):
 	

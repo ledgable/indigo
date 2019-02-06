@@ -52,6 +52,7 @@ class MainApp(BaseClass):
 	@property
 	def configdir(self):
 		return self.devicedir + "/config"
+
 	
 	@property
 	def deviceid(self):

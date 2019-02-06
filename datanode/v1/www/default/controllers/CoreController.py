@@ -1,5 +1,5 @@
 
-from modules.http.controllers.DefaultController import *
+from www.__common.controllers.DefaultController import *
 
 class CoreController(DefaultController):
 	

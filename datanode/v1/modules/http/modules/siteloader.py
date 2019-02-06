@@ -65,7 +65,7 @@ class SiteLoader(BaseClass, metaclass=Singleton):
 							
 							AppHandler().addsite(sitedir_, appHandler_)
 							
-							appHandler_.controllers_.loadControllerGroup(self.directory_ + "/../modules/http/controllers")
+							appHandler_.controllers_.loadControllerGroup(self.directory_ + "/__common/controllers")
 							appHandler_.controllers_.loadControllerGroup(path_ + "/controllers")
 							appHandler_.controllers_.loadControllerGroup(path_ + "/applications")
 

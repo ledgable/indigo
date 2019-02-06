@@ -1,5 +1,6 @@
 
-from modules.http.controllers.Controller import *
+from www.__common.controllers.Controller import *
+
 from modules.chain import *
 from modules.applicationmanager import *
 
@@ -25,13 +26,10 @@ class NodeController(Controller):
 	
 	def chains(self):
 		
-		application_ = ApplicationManager(self).get("datanode")
+		application_ = ApplicationManager(self).get("config")
 		
-		if (application_ != None):
-			configctrl_ = application_.configctrl
-			
-			if (configctrl_ != None):
-				return configctrl_.chains
+		if (application_ != None):			
+			return application_.chains
 		
 		return None
 

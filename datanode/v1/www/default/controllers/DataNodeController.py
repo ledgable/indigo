@@ -1,5 +1,5 @@
 
-from modules.http.controllers.NodeController import *
+from www.__common.controllers.NodeController import *
 
 class DataNodeController(NodeController):
 
