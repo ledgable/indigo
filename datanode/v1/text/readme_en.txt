@@ -1,5 +1,5 @@
 
-Ledgable Data & Console Node (C)2018 Ledgable BV
+Ledgable Data Node (C)2018 Ledgable BV
 
 THIS SOFTWARE IS RELEASED UNDER THE GNU GENERAL PUBLIC LICENSE V3.0
 https://www.gnu.org/licenses/gpl-3.0.en.html
