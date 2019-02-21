@@ -714,9 +714,9 @@ class ChainController(BaseClass):
 			message_.writeString(transactionid_)
 			message_.writeString(self.deviceid)
 			message_.writeString(self.chainid_)
-			message_.writeLong(chain_.transId)
+			message_.writeLong(transIdx)
 			message_.writeString(chain_.hash)
-			message_.writeString(chain_.shadowHash)
+			message_.writeString(newHash)
 			
 			self.sendMessageToPartners(partners_, message_)
 
