@@ -7,7 +7,6 @@ DEFAULT_KEYS = ["$time", "$id", "$class"]
 
 class ChainController(BaseClass):
 
-
 	timer_ = None
 	manager_ = None
 	
@@ -682,10 +681,17 @@ class ChainController(BaseClass):
 				pass
 	
 
-	def notifyReplPartners(self, newHash=None, transIdx=0):
-		
+
+	def notifyReplPartners(self, caller, object):
+	
 		# if this is a read-node only, ignore !!!
+
+		chain_ = caller				
+		chainid_ = chain_.uid_
 		
+		if (chainid_ != self.chainid_):
+			return # not for me !!
+
 		myid_ = self.deviceid
 		partners_ = []
 		
@@ -705,21 +711,21 @@ class ChainController(BaseClass):
 		
 			self.log("Notifying replication partners of message")
 			self.log("Sending message to %s" % partners_)
-				
-			chain_ = self.chain_
+			
 			transactionid_ = self.uniqueId
+			newHash_ = chain_.shadowHash
 			
 			message_ = MessageWriter()
 			message_.writeByte(SOCKET_MESSAGE_STATUS)
 			message_.writeString(transactionid_)
 			message_.writeString(self.deviceid)
 			message_.writeString(self.chainid_)
-			message_.writeLong(transIdx)
+			message_.writeLong(chain_.transid_)
 			message_.writeString(chain_.hash)
-			message_.writeString(newHash)
+			message_.writeString(newHash_)
 			
 			self.sendMessageToPartners(partners_, message_)
-
+				
 
 	def shutdown(self):
 	
@@ -739,6 +745,8 @@ class ChainController(BaseClass):
 		
 		self.log("Creating chain instance = %s" % (chainid))
 		
+		NotificationCenter().addObserver(NOTIFY_CHAIN_FLUSHED, self.notifyReplPartners)
+
 		self.configupdated_ = True
 		
 		success_ = self.createDirectories()

@@ -1,4 +1,6 @@
 
+import queue
+
 from config import *
 from dataobjects import *
 
@@ -46,27 +48,86 @@ def shadowHash(transactions=[], basehash=BASE_HASH):
 
 class ChainReader(BaseClass):
 
+	queue_ = None
 	uid_ = None
-	buffer_ = None
 	directory_ = None
 	transid_ = 0
 	hash_ = None
 	state_ = None
 	transactions_ = None
+	
+	
+	def writeToDisk(self):
+		
+		while(True):
+			
+			idx_, transactions_ = self.queue_.get()
+			
+			if (transactions_ == None):
+				break
+		
+			if (len(transactions_) > 0):
+				
+				for entry_ in transactions_:
+				
+					if (len(self.transactions_) == MAX_TRANSACTIONS_BEFORE_FLUSH):
+						
+						# we need to calculate the next hash !!
+						self.hash_ = shadowHash(self.transactions_, self.hash_)
+						
+						# start a new block
+						self.transactions_ = []
+					
+					self.transactions_.append(entry_)
+					
+					url_ = self.getFullPathForBlock(self.hash_)
+					
+					out_ = ""
+					remaining_ = entry_.serialize()
+					index_ = 0
+				
+					while len(remaining_) > 0:
+						
+						part_ = None
+						
+						if len(remaining_) > MAX_LINE_LENGTH:
+							part_ = remaining_[:MAX_LINE_LENGTH]
+							remaining_ = remaining_[MAX_LINE_LENGTH:]
+						else:
+							part_ = remaining_
+							remaining_ = ""
+						
+						if (index_ == 0):
+							out_ += ("%s\n" % part_)
+						else:
+							out_ += ("%s%s\n" % (TAB_CHAR, part_))
+						
+						index_ += 1
+					
+					with open(url_, 'a', encoding=UTF8) as fileWrite:
+						fileWrite.write(out_)
+						
+				NotificationCenter().postNotification(NOTIFY_CHAIN_FLUSHED, self, transactions_)
+				NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactions_)
+
+			self.queue_.task_done()
+
+	
 
 	def __init__(self, directory=None, chainid=None):
 		
 		self.transactions_ = []
-		self.buffer_ = []
+		self.queue_ = queue.PriorityQueue()
+		
+		t_ = threading.Thread(target=self.writeToDisk)
+		t_.start()
+		
 		self.uid_ = chainid
 		self.transid_ = 0
 		self.directory_ = directory
 		self.hash_ = BASE_HASH
 		self.state_ = CHAIN_INITIALIZING
 		
-		self.flusher_ = Repeater(10.0, self.flush, self)
-		self.flusher_.start()
-
 		NotificationCenter().postNotification(NOTIFY_CHAIN_INITIALIZED, self, None)
 
 		self.__preload()
@@ -220,38 +281,7 @@ class ChainReader(BaseClass):
 				self.logException(inst)
 
 		return transaction_
-	
-	# write transactions to disk (that arent committed
-	
-	def flushToDisk(self, transactions):
-	
-		url_ = self.getFullPathForBlock(self.hash_)
-	
-		with open(url_, 'a', encoding=UTF8) as fileWrite:
-		
-			for entry_ in transactions:
-			
-				remaining_ = entry_.serialize()
-				index_ = 0
-				
-				while len(remaining_) > 0:
-					
-					part_ = None
-					
-					if len(remaining_) > MAX_LINE_LENGTH:
-						part_ = remaining_[:MAX_LINE_LENGTH]
-						remaining_ = remaining_[MAX_LINE_LENGTH:]
-					else:
-						part_ = remaining_
-						remaining_ = ""
-					
-					if index_ == 0:
-						fileWrite.write(("%s\n" % part_))
-					else:
-						fileWrite.write(("%s%s\n" % (TAB_CHAR, part_)))
-					
-					index_ += 1
-			
+
 	# read transactions from a block in the chain
 
 	def readTransactionsFromChain(self, hash):
@@ -351,40 +381,6 @@ class ChainReader(BaseClass):
 	
 	# write transactions to disk..
 	
-	def flush(self, args):
-	
-		if (len(self.buffer_) > 0):
-			
-			transactions_ = self.buffer_			
-			self.buffer_ = []
-			transactionstowrite_ = []
-			
-			for transaction_ in transactions_:
-				
-				if (len(self.transactions_) == MAX_TRANSACTIONS_BEFORE_FLUSH):
-					
-					if (len(transactionstowrite_) > 0):
-						self.flushToDisk(transactionstowrite_)
-						transactionstowrite_ = []
-						NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactionstowrite_)
-
-					# we need to calculate the next hash !!
-					self.hash_ = shadowHash(self.transactions_, self.hash_)
-
-					# start a new block
-					transactionstowrite_ = []
-					self.transactions_ = []
-						
-				transactionstowrite_.append(transaction_)
-				self.transactions_.append(transaction_)
-			
-			if (len(transactionstowrite_) > 0):
-				self.flushToDisk(transactionstowrite_)
-				
-			# add transaction to the account history (for caching !!)
-			NotificationCenter().postNotification(NOTIFY_CHAIN_TRANSACTIONS, self, transactionstowrite_)
-
-	
 	def writeTransactionsToChain(self, transactionsToWrite=None):
 	
 		if (self.state_ == CHAIN_INITIALIZING):
@@ -414,18 +410,19 @@ class ChainReader(BaseClass):
 				transaction_["$id"] = nextTransIndex_
 
 			if (oktowrite_):
-							
 				# if there is no epoch in the record, add one
 				
 				if (transaction_["$time"] == None): # we dont change the epoch if it is already there..
 					transaction_["$time"] = now_
 
 				self.updateTransIndex(nextTransIndex_)
-				self.buffer_.append(transaction_)
-
-			
-		return self.shadowHash
+				flush_.append(transaction_)
+				
+		if (len(flush_) > 0):
+			self.queue_.put((nextTransIndex_, flush_))
 	
+		return self.shadowHash
+
 	# read contents of chain using a function to interate over the contents
 	
 	def readChain(self, startHash, functionToProcess=None, filter=None, since=0):
@@ -696,17 +693,17 @@ class Chain(ChainReader):
 	def writeTransactionsToChain(self, transactionsToWrite=None):
 	
 		hashout_ = ChainReader.writeTransactionsToChain(self, transactionsToWrite)
-	
-		if (self.controller_ != None):
-			
-			# we do a non-blocking call to inform the replication partners..
-			
-			idx_ = self.transId
-			
-			thread_ = threading.Thread(target=self.controller_.notifyReplPartners, args=(hashout_, idx_))
-			thread_.daemon = True
-			thread_.start()
-		
+#	
+#		if (self.controller_ != None):
+#			
+#			# we do a non-blocking call to inform the replication partners..
+#			
+#			idx_ = self.transId
+#			
+#			thread_ = threading.Thread(target=self.controller_.notifyReplPartners, args=(hashout_, idx_))
+#			thread_.daemon = True
+#			thread_.start()
+#		
 		return hashout_
 
 
