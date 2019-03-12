@@ -483,9 +483,11 @@ class Chain(ChainReader):
 		
 		if (transactionsIn != None) and (len(transactionsIn) > 0):
 			
+			ids_ = filter["ids"]
+			
 			for transaction_ in transactionsIn:
 				if (filter != None):
-					if (transaction_["$id"] in filter["ids"]):
+					if (transaction_["$id"] in ids_):
 						out_.append(transaction_)
 				else:
 					out_.append(transaction_)

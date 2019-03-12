@@ -5,6 +5,9 @@ import copy
 import io
 import base64
 import inspect
+import calendar, datetime
+
+from decimal import Decimal
 
 # this allows us to treat a dictionary like an class with properties
 
@@ -70,7 +73,35 @@ class extlist(list):
 			pass
 		
 		return None
-	
+
+		
+	@property
+	def all(self):
+		
+		out_ = []
+		
+		for obj_ in self:
+		
+			value_ = obj_
+		
+			if isinstance(obj_, Decimal):
+				value_ = float(obj_)
+		
+			elif isinstance(obj_, datetime.datetime):
+				if obj_.utcoffset() is not None:
+					obj_ = obj_ - obj_.utcoffset()
+				value_ = int(calendar.timegm(obj_.timetuple()) * 1000 + obj_.microsecond / 1000)
+			
+			elif issubclass(obj_.__class__, extdict):
+				value_ = obj_.dict()
+			
+			elif issubclass(obj_.__class__, extlist):
+				value_ = obj_.all
+
+			out_.append(value_)
+		
+		return out_
+
 	
 	def toJson(self):
 		
@@ -89,6 +120,36 @@ class extdict(dict):
 		if (row != None):
 			for k,v in row.items():
 				self.__setattr__(k, v)
+
+	def dict(self):
+		
+		dictout_ = {}
+		keys_ = self.keys()
+		
+		for key_ in keys_:
+			
+			obj_ = self[key_]
+			value_ = self[key_]
+			
+			if isinstance(obj_, Decimal):
+				value_ = float(obj_) # encode decimals for 8 decimal places
+		
+			elif isinstance(obj_, datetime.datetime):
+				
+				if obj_.utcoffset() is not None:
+					obj_ = obj_ - obj_.utcoffset()
+				
+				value_ = int(calendar.timegm(obj_.timetuple()) * 1000 + obj_.microsecond / 1000)
+			
+			elif issubclass(obj_.__class__, extdict):
+				value_ = obj_.dict()
+			
+			elif issubclass(obj_.__class__, extlist):
+				value_ = obj_.all
+						
+			dictout_[key_] = value_
+		
+		return dictout_
 	
 	@property
 	def reservedkeys(self):
@@ -169,6 +230,16 @@ class extdict(dict):
 					
 				if (key_ in self.keys()):
 					del self[key_]
+
+						
+	def __sanitize(self, value):
+
+		if (value != None):
+			if (isinstance(value, str)):
+				if ("%" in value):
+					value = value.replace('%', '&#x25;')
+	
+		return value
 	
 	
 	def __setattr__(self, name, value):
@@ -187,7 +258,7 @@ class extdict(dict):
 				self[name] = extlist(value)
 
 			else:
-				self[name] = value
+				self[name] = self.__sanitize(value)
 
 		except Exception as inst:
 			pass
@@ -203,9 +274,12 @@ class extdict(dict):
 	def default(self, name, defaultVal=None):
 		
 		name = str(name).replace("-", "").lower()
-		
-		return self.get(name, defaultVal)
+		value_ = self.get(name, defaultVal)
 
+		if (value_ != None) and (value_ == ""):
+			return defaultVal
+		
+		return value_
 	
 	def __getattr__(self, name):
 		

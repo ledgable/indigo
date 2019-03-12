@@ -92,7 +92,7 @@ class MyHandler(CoreHandler):
 	def __init__(self, request, client_address, server, country_code, isssl=False):
 		CoreHandler.__init__(self, request, client_address, server, country_code, isssl)
 
-	
+
 	@property
 	def CONFIG(self):
 		return self.apphandler.config_
@@ -159,19 +159,19 @@ class MyHandler(CoreHandler):
 			
 			if (data == None):
 				return None
-
-			elif issubclass(data.__class__, DAOObject):
-				return json.dumps(data, cls=CustomEncoder)
-		
-			elif issubclass(data.__class__, DAOCollection):
-				return json.dumps(data, cls=CustomEncoder)
-
+				
+			elif issubclass(data.__class__, extlist):
+				return json.dumps(data.all, cls=CustomEncoder)
+			
+			elif issubclass(data.__class__, extdict):
+				return json.dumps(data.dict(), cls=CustomEncoder)
+			
 			elif type(data) == type(dict()):
 				return json.dumps(data, cls=CustomEncoder)
-
+			
 			elif type(data) == type(list()):
-				return json.dumps(data, cls=CustomEncoder)
-
+				return json.dumps(data, cls=CustomEncoder);
+			
 			else:
 				return str(data, UTF8)
 		
@@ -356,7 +356,7 @@ class MyHandler(CoreHandler):
 			
 			try:
 				self.raw_requestline = self.rfile.readline(65537)
-
+			
 			except socket.timeout as e:
 				# A read or a write timed out.  Discard this connection
 				self.raw_requestline = None
@@ -593,6 +593,9 @@ class MyHandler(CoreHandler):
 						self.send_error(HTTP_FORBIDDEN, RESPONSE_ACCESS_DENIED)
 						self.close_connection = 1
 						return
+
+				else:
+					vars_.isajax = True
 		
 			# check useragent for allowing access...
 			
@@ -633,7 +636,7 @@ class MyHandler(CoreHandler):
 					if (dict_ != None) and ("actions" in dict_.keys()):
 						
 						actionsFound_ = dict_["actions"]
-						
+												
 						if (len(actionsFound_) == 1):
 							
 							gatewayAction_ = actionsFound_[0]
@@ -706,15 +709,19 @@ class MyHandler(CoreHandler):
 				if (session_.username == None):
 					if (vars_.authorization != None):
 						
-						success_, username_, permissions_ = self.AUTHENTICATION.check(vars_.authorization)
+						realm_, success_, username_, password_, permissions_ = self.AUTHENTICATION.check(vars_.authorization)
+			
+						if (realm_ == "basic"):
+							if (success_):
+								session_.username = username_
+								session_.permissions = permissions_
+							else:
+								self.send_error(HTTP_FORBIDDEN, RESPONSE_ACCESS_DENIED)
+								self.close_connection = 1
+								return
 						
-						if (success_):
-							session_.username = username_
-							session_.permissions = permissions_
 						else:
-							self.send_error(HTTP_FORBIDDEN, RESPONSE_ACCESS_DENIED)
-							self.close_connection = 1
-							return
+							vars_.authentication = {"username":username_, "password":password_, "realm":realm_}
 
 					else:
 						if (self.CONFIG.REQUIRE_AUTH == 1):
@@ -722,7 +729,7 @@ class MyHandler(CoreHandler):
 							
 								# use the browser default authentication process
 								if (vars_.authorization == None):
-									self.send_response(401)
+									self.send_response(HTTP_SESSION_FAILURE)
 									self.send_header("WWW-Authenticate", "Basic")
 									self.end_headers()
 									self.close_connection = 1
@@ -775,7 +782,7 @@ class MyHandler(CoreHandler):
 						
 								if (length_ > 0):
 									postData_ = self.rfile.read(length_)
-									
+						
 						module_ = self.CONTROLLERS.controllerForId(routefound_.controller)
 												
 						if (module_ != None):
@@ -792,16 +799,23 @@ class MyHandler(CoreHandler):
 								response_ = function_(postData_, vars_, **routefound_.vars)
 							else:
 								response_ = function_(postData_, vars_)
-							
+									
 							if (response_ != None):
 								exitcode_ = response_.response
 								format_ = response_.mimetype
+							
 							else:
 								exitcode_ = HTTP_NO_CONTENT
 
-							if (exitcode_ != HTTP_OK) and (exitcode_ != HTTP_NO_CONTENT):
-								self.log(("Request failed - %s:%s" % (action, vars_.path.path)))
-							
+							if (exitcode_ == HTTP_OK):
+								pass
+											
+							elif (exitcode_ == HTTP_NOT_ACCEPTABLE):
+								self.log(("Request failed with reason - %s:%s" % (action, vars_.path.path)))
+													
+							elif (exitcode_ != HTTP_NO_CONTENT):
+								self.log(("Request failed with code %d - %s:%s" % (exitcode_, action, vars_.path.path)))
+														
 						else:
 							self.log(("%s | %s" % (routefound_.function, routefound_.vars)))
 
@@ -815,18 +829,21 @@ class MyHandler(CoreHandler):
 				# now render the result
 
 				if (response_ != None):
-				
-					modifiedsince_ = None
 					
-					if (vars_.ifmodifiedsince != None):
-						modifiedsince_ = vars_.ifmodifiedsince
-				
 					now_ = time.time()
 					expires_ = now_ + 2419200
 					sendcontent_ = 1
 					compress_ = response_.compressed
 
-					if (exitcode_ == HTTP_OK):
+					if (exitcode_ in [HTTP_SESSION_FAILURE]):
+						
+						self.send_response(exitcode_)
+						self.send_header("WWW-Authenticate", response_.content)
+						self.end_headers()
+						self.close_connection = 1						
+						return
+							
+					elif (exitcode_ in [HTTP_OK, HTTP_NOT_ACCEPTABLE]):
 						
 						contentout_ = self.reformat(response_.content, format_)
 						dataout_ = contentout_
@@ -845,13 +862,17 @@ class MyHandler(CoreHandler):
 											
 						if (format_ in [TYPE_RAW, TYPE_HTML, TYPE_JSON, TYPE_XMLS, TYPE_XML]):
 							
-							self.send_response(HTTP_OK)
+							self.send_response(exitcode_)
 							
 							if compress_:
 								self.send_header("Content-Encoding", "deflate")
 
 							self.send_header("Content-Type", MIMETYPES[format_])
-							self.send_header("Content-Length", str(len(response_.content)))
+
+							if (response_.content == None):
+								self.send_header("Content-Length", str(0))
+							else:
+								self.send_header("Content-Length", str(len(response_.content)))
 							
 							sendcookies_ = True
 
@@ -878,6 +899,11 @@ class MyHandler(CoreHandler):
 									self.send_header("Pragma", "no-cache")
 
 								else:
+									
+									modifiedsince_ = None
+
+									if (vars_.ifmodifiedsince != None):
+										modifiedsince_ = vars_.ifmodifiedsince
 									
 									datelastmodified_ = datetime.datetime.strptime(time.ctime(response_.lastmodified), "%a %b %d %H:%M:%S %Y")
 									datemodified_ = datelastmodified_.strftime("%a, %d %b %Y %H:%M:%S GMT")
@@ -998,7 +1024,7 @@ class MyHandler(CoreHandler):
 							self.close_connection = 0
 
 						return
-							
+			
 		self.send_response(exitcode_)
 		self.send_header("Content-Type", "text/html")
 		self.send_header("Connection", "Close")
