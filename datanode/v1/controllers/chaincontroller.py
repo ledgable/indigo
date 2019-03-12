@@ -57,24 +57,23 @@ class ChainController(BaseClass):
 			
 			for partner_ in partners:
 			
-				keyid_ = partner_.uid				
-				if (keyid_ != self.deviceid):
-
-					connections_ = list(self.connections_.keys())
+				if (partner_.ip_address != "0.0.0.0"):
+					keyid_ = partner_.uid
 					
-					self.log("Sending message to %s" % partner_)
-					
-					if (keyid_ not in connections_):
+					if (keyid_ != self.deviceid):
+						connections_ = list(self.connections_.keys())
+						self.log("Sending message to %s" % partner_)
 						
-						certpartner_ = ("%s.cer" % keyid_)
-						connection_ = TimedSocketConnectionOut(keyid_, partner_.ip_address, self.messageReceived, None, self.disconnectSuccess, self.failedConnect, certpartner_)
-						self.connections_[keyid_] = connection_
-					
-					else:
-						# connection already established to service
-						connection_ = self.connections_[keyid_]
-					
-					connection_.send(message)
+						if (keyid_ not in connections_):
+							certpartner_ = ("%s.cer" % keyid_)
+							connection_ = TimedSocketConnectionOut(keyid_, partner_.ip_address, self.messageReceived, None, self.disconnectSuccess, self.failedConnect, certpartner_)
+							self.connections_[keyid_] = connection_
+						
+						else:
+							# connection already established to service
+							connection_ = self.connections_[keyid_]
+						
+						connection_.send(message)
 
 
 	def setConfigUpdated(self):
